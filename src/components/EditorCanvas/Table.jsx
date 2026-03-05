@@ -24,6 +24,20 @@ import { isRtl } from "../../i18n/utils/rtl";
 import i18n from "../../i18n/i18n";
 import { getCommentHeight, getTableHeight } from "../../utils/utils";
 
+/**
+ * Render a draggable diagram table with header controls, field rows, and an inline editor.
+ *
+ * Renders the visual representation of a table inside the diagram: a colored header, optional comment,
+ * per-field rows (with optional type/summary popovers), selection/lock/edit controls, and a side editor.
+ *
+ * @param {object} props
+ * @param {object} props.tableData - Table model (id, name, x, y, color, locked, hidden, comment, fields, indices, etc.).
+ * @param {function} props.onPointerDown - Pointer-down handler attached to the table container (used for dragging/interaction).
+ * @param {function} props.setHoveredTable - Callback invoked with {tableId, fieldId} when pointer enters/leaves a field; pass {tableId: null, fieldId: null} to clear.
+ * @param {function} props.handleGripField - Callback invoked when the field grip handle is pressed to start a linking operation.
+ * @param {function} props.setLinkingLine - State updater used to set the linking line coordinates and start/end ids during link creation.
+ * @returns {import('react').ReactNode} The rendered table element (JSX) or null when the table is hidden.
+ */
 export default function Table({
   tableData,
   onPointerDown,
@@ -34,7 +48,7 @@ export default function Table({
   const [hoveredField, setHoveredField] = useState(null);
   const { database } = useDiagram();
   const { layout } = useLayout();
-  const { deleteTable, deleteField, updateTable } = useDiagram();
+  const { deleteTable, deleteField, updateTable, deleteAllFields } = useDiagram();
   const { settings } = useSettings();
   const { t } = useTranslation();
   const {
@@ -242,6 +256,18 @@ export default function Table({
                             </div>
                           )}
                         </div>
+                        <Button
+                          icon={<IconMinus />}
+                          type="danger"
+                          block
+                          style={{ marginTop: "8px" }}
+                          onClick={() => deleteAllFields(tableData.id)}
+                          disabled={
+                            layout.readOnly || tableData.fields.length === 0
+                          }
+                        >
+                          {t("delete_all_fields")}
+                        </Button>
                         <Button
                           icon={<IconDeleteStroked />}
                           type="danger"

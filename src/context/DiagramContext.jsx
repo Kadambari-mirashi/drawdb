@@ -7,6 +7,17 @@ import { nanoid } from "nanoid";
 
 export const DiagramContext = createContext(null);
 
+/**
+ * Provides diagram-related state and actions (tables, relationships, database, and their mutators)
+ * to descendant components via DiagramContext.
+ *
+ * The context value includes: tables, relationships, add/update/delete helpers for tables/fields/relationships,
+ * undo/redo integration, and database selection state.
+ *
+ * @param {object} props
+ * @param {import('react').ReactNode} props.children - Child nodes rendered inside the provider.
+ * @returns {JSX.Element} The DiagramContext provider wrapping the children.
+ */
 export default function DiagramContextProvider({ children }) {
   const { t } = useTranslation();
   const [database, setDatabase] = useState(DB.GENERIC);
@@ -173,6 +184,55 @@ export default function DiagramContextProvider({ children }) {
     });
   };
 
+
+  const deleteAllFields = (tid, addToHistory = true) => {
+    const table = tables.find((t) => t.id === tid);
+    if (!table || table.fields.length === 0) return;
+
+    const fieldIds = new Set(table.fields.map((field) => field.id));
+    const rels = relationships.filter(
+      (relationship) =>
+        (relationship.startTableId === tid &&
+          fieldIds.has(relationship.startFieldId)) ||
+        (relationship.endTableId === tid &&
+          fieldIds.has(relationship.endFieldId)),
+    );
+
+    if (addToHistory) {
+      setUndoStack((prev) => [
+        ...prev,
+        {
+          action: Action.EDIT,
+          element: ObjectType.TABLE,
+          component: "field_delete_all",
+          tid,
+          data: {
+            fields: table.fields,
+            relationships: rels,
+          },
+          message: t("edit_table", {
+            tableName: table.name,
+            extra: "[delete all fields]",
+          }),
+        },
+      ]);
+      setRedoStack([]);
+    }
+
+    setRelationships((prev) =>
+      prev.filter(
+        (relationship) =>
+          !(
+            (relationship.startTableId === tid &&
+              fieldIds.has(relationship.startFieldId)) ||
+            (relationship.endTableId === tid &&
+              fieldIds.has(relationship.endFieldId))
+          ),
+      ),
+    );
+
+    updateTable(tid, { fields: [] });
+  };
   const addRelationship = (data, addToHistory = true) => {
     if (addToHistory) {
       setRelationships((prev) => {
@@ -237,6 +297,7 @@ export default function DiagramContextProvider({ children }) {
         updateTable,
         updateField,
         deleteField,
+        deleteAllFields,
         deleteTable,
         relationships,
         setRelationships,
@@ -253,3 +314,6 @@ export default function DiagramContextProvider({ children }) {
     </DiagramContext.Provider>
   );
 }
+
+
+
