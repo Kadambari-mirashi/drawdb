@@ -86,6 +86,16 @@ import { deleteFromCache, STORAGE_KEY } from "../../utils/cache";
 import { useLiveQuery } from "dexie-react-hooks";
 import { DateTime } from "luxon";
 
+/**
+ * Render the editor's control panel and toolbar for managing diagrams, exports, imports, view/layout toggles, undo/redo, and related actions.
+ *
+ * Provides UI and handlers for file operations, edit actions, view/settings toggles, keyboard shortcuts, and stateful modals/sidesheets used by the diagram editor.
+ *
+ * @param {Object} props - Component props.
+ * @param {string} props.title - Current diagram title displayed in the header.
+ * @param {(title: string) => void} props.setTitle - Setter for updating the diagram title.
+ * @param {string} props.lastSaved - Human-readable timestamp or label for the last saved state.
+ * @returns {JSX.Element} The control panel and related modal/sidesheet elements for the editor.
 export default function ControlPanel({ title, setTitle, lastSaved }) {
   const { id: diagramId } = useParams();
 
@@ -109,6 +119,7 @@ export default function ControlPanel({ title, setTitle, lastSaved }) {
     addTable,
     updateTable,
     deleteField,
+    deleteAllFields,
     deleteTable,
     updateField,
     setRelationships,
@@ -220,6 +231,9 @@ export default function ControlPanel({ title, setTitle, lastSaved }) {
           const updatedFields = table.fields.slice();
           updatedFields.splice(a.data.index, 0, a.data.field);
           updateTable(a.tid, { fields: updatedFields });
+        } else if (a.component === "field_delete_all") {
+          setRelationships((prev) => [...prev, ...a.data.relationships]);
+          updateTable(a.tid, { fields: a.data.fields });
         } else if (a.component === "field_add") {
           updateTable(a.tid, {
             fields: table.fields.filter((e) => e.id !== a.fid),
@@ -382,6 +396,8 @@ export default function ControlPanel({ title, setTitle, lastSaved }) {
           updateField(a.tid, a.fid, a.redo);
         } else if (a.component === "field_delete") {
           deleteField(a.data.field, a.tid, false);
+        } else if (a.component === "field_delete_all") {
+          deleteAllFields(a.tid, false);
         } else if (a.component === "field_add") {
           updateTable(a.tid, {
             fields: [
@@ -2002,3 +2018,6 @@ export default function ControlPanel({ title, setTitle, lastSaved }) {
     );
   }
 }
+
+
+
