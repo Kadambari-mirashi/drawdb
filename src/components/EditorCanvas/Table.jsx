@@ -24,6 +24,20 @@ import { isRtl } from "../../i18n/utils/rtl";
 import i18n from "../../i18n/i18n";
 import { getCommentHeight, getTableHeight } from "../../utils/utils";
 
+/**
+ * Render a draggable table UI for the diagram with controls for editing, locking, field actions, and linking.
+ *
+ * Renders the table header, optional comment, per-field rows (with popovers for field summaries), action buttons (lock/unlock, edit, more),
+ * and a SideSheet editor when the table is selected; returns null when the table is marked hidden.
+ *
+ * @param {Object} props
+ * @param {Object} props.tableData - Table model containing layout and metadata (e.g., id, name, x, y, color, comment, locked, hidden, fields[], indices[]).
+ * @param {Function} props.onPointerDown - Pointer-down event handler forwarded to the outer foreignObject (used for dragging/selecting the table).
+ * @param {Function} props.setHoveredTable - Callback(updated) invoked with {tableId, fieldId} when pointer enters or leaves fields to track hover state.
+ * @param {Function} props.handleGripField - Callback invoked when the field drag handle is engaged to start a field-grip operation.
+ * @param {Function} props.setLinkingLine - Setter function used to initialize/update the linking line state when starting a field drag; receives an object with start/end coordinates and ids.
+ * @returns {JSX.Element|null} A React element representing the table UI, or `null` if the table is hidden.
+ */
 export default function Table({
   tableData,
   onPointerDown,
@@ -34,7 +48,7 @@ export default function Table({
   const [hoveredField, setHoveredField] = useState(null);
   const { database } = useDiagram();
   const { layout } = useLayout();
-  const { deleteTable, deleteField, updateTable } = useDiagram();
+  const { deleteTable, deleteField, updateTable, deleteAllFields } = useDiagram();
   const { settings } = useSettings();
   const { t } = useTranslation();
   const {
@@ -242,6 +256,18 @@ export default function Table({
                             </div>
                           )}
                         </div>
+                        <Button
+                          icon={<IconMinus />}
+                          type="danger"
+                          block
+                          style={{ marginTop: "8px" }}
+                          onClick={() => deleteAllFields(tableData.id)}
+                          disabled={
+                            layout.readOnly || tableData.fields.length === 0
+                          }
+                        >
+                          {t("delete_all_fields")}
+                        </Button>
                         <Button
                           icon={<IconDeleteStroked />}
                           type="danger"
